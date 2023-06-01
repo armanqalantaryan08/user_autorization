@@ -1,5 +1,7 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
-import { RawBaseEntity } from '../../db/RawBaseEntity';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import { RawBaseEntity } from './rawBase.entity';
+import { RequestsEntity } from './requests.entity';
+import { FriendsEntity } from './friends.entity';
 
 @Entity('users')
 export class UsersEntity extends RawBaseEntity {
@@ -12,12 +14,18 @@ export class UsersEntity extends RawBaseEntity {
   @Column({ type: 'varchar', length: 512, nullable: false })
   surname: string;
 
-  @Column({ type: 'varchar', length: 512, nullable: false })
+  @Column({ type: 'integer', nullable: false })
+  age: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: false })
   password: string;
 
-  @Column({ type: 'varchar', length: 512, nullable: true })
-  access_token: string;
+  @OneToMany(() => RequestsEntity, (request) => request.requester)
+  outgoingRequests: Array<RequestsEntity>;
 
-  @Column({ type: 'varchar', length: 512, nullable: true })
-  refresh_token: string;
+  @OneToMany(() => RequestsEntity, (request) => request.requestee)
+  incomingRequests: Array<RequestsEntity>;
+
+  @OneToMany(() => FriendsEntity, (friend) => friend.user)
+  friends: Array<FriendsEntity>;
 }

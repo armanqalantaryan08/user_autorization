@@ -1,7 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { User_DTO } from './User.dto';
+import {
+  IsEmail,
+  IsNumber,
+  IsPositive,
+  IsString,
+  Length,
+  Max,
+  Min,
+} from 'class-validator';
 
-export class create_User_DTO {
+export class User_create_ReqBody_DTO {
   @ApiProperty({ example: 'Mike', description: "User's name" })
   name: string;
 
@@ -9,8 +17,19 @@ export class create_User_DTO {
   surname: string;
 
   @ApiProperty({ example: 'user@gmail.com', description: "User's email" })
+  @IsString({ message: 'Must be a string' })
+  @IsEmail({}, { message: 'Email is incorrect' })
   email: string;
 
+  @ApiProperty({ example: 29, description: "User's surname" })
+  @IsNumber({ maxDecimalPlaces: 0 })
+  @IsPositive()
+  @Min(1)
+  @Max(100)
+  age: number;
+
   @ApiProperty({ example: 'AAAaaa000', description: "User's Password" })
+  @IsString({ message: 'Must be a string' })
+  @Length(4, 16, { message: 'Password length must be from 4 to 16' })
   password: string;
 }

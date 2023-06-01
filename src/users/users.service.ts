@@ -1,23 +1,25 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { create_User_DTO } from './dto/User.create.ReqBody.dto';
+import { User_create_ReqBody_DTO } from './dto/User.create.ReqBody.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UsersEntity } from './entities/user.entity';
-import { IsNull, Repository } from 'typeorm';
+import { FindManyOptions, IsNull, Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { User_DTO } from './dto/User.dto';
 import { User_Update_ReqBody_DTO } from './dto/User.update.ReqBody.dto';
-import { User_Login_ReqBody_DTO } from './dto/User.login.ReqBody.dto';
-import { JwtModule, JwtService } from '@nestjs/jwt';
-import { User_getByEmail_ResBody_DTO } from './dto/User.getByEmail.ResBody.dto';
-import { User_ReqParam_DTO } from './dto/User.ReqParam.dto';
+import { RequestsEntity } from './entities/requests.entity';
+import { FriendsEntity } from './entities/friends.entity';
+import { User_getMany_ReqQuery_DTO } from './dto/User.getMany.ReqQuery.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(UsersEntity)
-    private readonly userRepository: Repository<UsersEntity>,
-    private jwtService: JwtService,
+    private userRepository: Repository<UsersEntity>,
+    @InjectRepository(RequestsEntity)
+    private requestRepository: Repository<RequestsEntity>,
+    @InjectRepository(FriendsEntity)
+    private friendRepository: Repository<FriendsEntity>,
   ) {}
 
   private _validateEmail(email: string) {
@@ -33,63 +35,19 @@ export class UsersService {
         uuid: user.uuid,
         name: user.name,
         surname: user.surname,
+        age: user.age,
         email: user.email,
       };
     });
   }
 
-  private async _isUnique(email: string) {
-    const user = await this.userRepository.findOne({
-      where: {
-        email,
-      },
-    });
-
-    if (user) {
-      throw new HttpException(
-        'User with such email or nickname already exist',
-        HttpStatus.NOT_ACCEPTABLE,
-      );
-    }
-  }
-
-  private async _validateAndGetUser(
-    args: User_Login_ReqBody_DTO,
-  ): Promise<User_DTO> {
-    const user = await this.getByEmail(args.email);
-    if (!user) {
-      throw new HttpException(
-        'User with such email not found',
-        HttpStatus.NOT_ACCEPTABLE,
-      );
-    }
-    const password_equals = await bcrypt.compare(args.password, user.password);
-    if (password_equals) {
-      return user;
-    }
-    throw new HttpException('Wrong password', HttpStatus.NOT_ACCEPTABLE);
-  }
-
-  private async _generateToken(user: User_DTO) {
-    const payload = {
-      name: user.name,
-      surname: user.surname,
-      email: user.email,
-    };
-
-    return {
-      token: this.jwtService.sign(payload),
-    };
-  }
-
-  async create(args: create_User_DTO): Promise<string> {
+  async create(args: User_create_ReqBody_DTO): Promise<User_DTO> {
     if (!this._validateEmail(args.email)) {
       throw new HttpException(
         'Invalid email format',
         HttpStatus.NOT_ACCEPTABLE,
       );
     }
-    await this._isUnique(args.email);
     const uuid = randomUUID();
     const hashed_password = await bcrypt.hash(args.password, 5);
     const user = new UsersEntity(uuid);
@@ -98,32 +56,50 @@ export class UsersService {
     user.password = hashed_password;
     user.name = args.name;
     user.surname = args.surname;
+    user.age = args.age;
     user.updated_at = new Date();
 
     await this.userRepository.save(user);
-    return 'New User successfully added';
+    return (await this._transformUserToDto([user]))[0];
   }
 
-  async login(args: User_Login_ReqBody_DTO) {
-    const user = await this._validateAndGetUser(args);
-    return await this._generateToken(user);
+  async getAll(args: User_getMany_ReqQuery_DTO) {
+    const query = this.userRepository.createQueryBuilder('users').where({
+      deleted_at: IsNull(),
+    });
+
+    if (args.name) {
+      query.andWhere('users.name LIKE (:name)', {
+        name: args.name + '%',
+      });
+    }
+
+    if (args.surname) {
+      query.andWhere('users.surname LIKE (:surname)', {
+        surname: args.surname + '%',
+      });
+    }
+
+    if (args.age) {
+      query.andWhere('users.age =:age', { age: args.age });
+    }
+
+    const users = await query.getMany();
+    return users;
   }
 
-  async getAll() {
-    return await this.userRepository.find({
+  async getByUuid(uuid: string) {
+    const user = await this.userRepository.findOne({
       where: {
+        uuid,
         deleted_at: IsNull(),
       },
     });
+    return user;
   }
 
   async getById(id: string): Promise<User_DTO> {
-    return await this.userRepository.findOne({
-      where: {
-        uuid: id,
-        deleted_at: IsNull(),
-      },
-    });
+    return (await this._transformUserToDto([await this.getByUuid(id)]))[0];
   }
 
   async getByEmail(email: string) {
@@ -133,6 +109,53 @@ export class UsersService {
         deleted_at: IsNull(),
       },
     });
+  }
+
+  async getFriends(uuid: string) {
+    console.log('uuid:', uuid);
+    const friends = await this.userRepository
+      .createQueryBuilder('user')
+      .select()
+      .leftJoin('user.friends', 'fr')
+      // .where('fr.user_uuid = user.uuid')
+      // .orWhere('fr.friend_uuid = user.uuid')
+      .orWhere('fr.friend_uuid = :uuid', {
+        uuid: '3ef65571-236c-43b0-8e75-c1452c7e272c',
+      })
+
+      // .orWhere('fr.user_uuid = user.uuid')
+      // .andWhere('fr.friend_uuid = :uuid', { uuid })
+      // .leftJoin('user.friends', 'fra')
+      // .where('fra.friend_uuid = :num', {
+      //   num: '9e579f72-c1b1-4822-880f-c3f4cf06a8e0',
+      // })
+      // .andWhere('fra.user_uuid = :uuid', { uuid })
+
+      // .leftJoin('user.friends', 'fr1')
+      // .where('fr1.friend_uuid = user.uuid')
+      // .orWhere('fr.friend_uuid = :uuid', { uuid })
+
+      .getMany();
+    return friends;
+
+    // const friends1 = await this.friendRepository.find({
+    //   where: {
+    //     user: {
+    //       uuid,
+    //     },
+    //   },
+    //   relations: ['friend'],
+    // });
+    // const friends2 = await this.friendRepository.find({
+    //   where: {
+    //     friend: {
+    //       uuid,
+    //     },
+    //   },
+    //   relations: ['user'],
+    // });
+    // console.log('fr', friends1);
+    // console.log('fr2', friends2);
   }
 
   async update(id: string, args: User_Update_ReqBody_DTO): Promise<User_DTO> {
@@ -150,6 +173,9 @@ export class UsersService {
     }
     if (args.email) {
       user.email = args.email;
+    }
+    if (args.age) {
+      user.age = args.age;
     }
     if (args.password) {
       user.password = await bcrypt.hash(args.password, 5);

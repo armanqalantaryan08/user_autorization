@@ -6,53 +6,69 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  Req,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { create_User_DTO } from './dto/User.create.ReqBody.dto';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { User_create_ReqBody_DTO } from './dto/User.create.ReqBody.dto';
 import { User_Update_ReqBody_DTO } from './dto/User.update.ReqBody.dto';
-import { User_Login_ReqBody_DTO } from './dto/User.login.ReqBody.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { User_getMany_ReqQuery_DTO } from './dto/User.getMany.ReqQuery.dto';
 
 @ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  //create new user---------------------------------
   @ApiOperation({ summary: 'Create user' })
   @ApiResponse({ status: 200 })
-  @Post('register')
-  register(@Body() createUserDto: create_User_DTO) {
+  @Post()
+  create(@Body() createUserDto: User_create_ReqBody_DTO) {
     return this.usersService.create(createUserDto);
   }
-
-  @ApiOperation({ summary: 'User login' })
-  @ApiResponse({ status: 200 })
-  @Post('login')
-  login(@Body() createUserDto: User_Login_ReqBody_DTO) {
-    return this.usersService.login(createUserDto);
-  }
-
+  //get all users------------------------------------
+  @ApiOperation({ summary: 'Get all users' })
   @Get()
-  getAll() {
-    return this.usersService.getAll();
+  @UseGuards(JwtAuthGuard)
+  getAll(@Query() body: User_getMany_ReqQuery_DTO) {
+    return this.usersService.getAll(body);
   }
 
-  @Get(':id')
+  //get user by it`s id--------------------------------
+  @ApiOperation({ summary: 'Get User By Id' })
+  @Get('get-user/:id')
+  @UseGuards(JwtAuthGuard)
   getById(@Param('id') id: string) {
     return this.usersService.getById(id);
   }
 
-  @Get('email/:email')
-  getByEmail(@Param('email') email: string) {
-    return this.usersService.getByEmail(email);
+  @ApiOperation({ summary: 'Get User By Id' })
+  @Get('friends')
+  @UseGuards(JwtAuthGuard)
+  getFriends(@Req() req) {
+    return this.usersService.getFriends(req.user.uuid);
   }
 
+  //update user`s data---------------------------------
+  @ApiOperation({ summary: 'Update user`s data' })
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() args: User_Update_ReqBody_DTO) {
     return this.usersService.update(id, args);
   }
 
+  //remove user----------------------------------------
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }

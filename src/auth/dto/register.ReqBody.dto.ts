@@ -9,21 +9,17 @@ import {
   Min,
 } from 'class-validator';
 
-export class User_Update_ReqBody_DTO {
+export class Register_ReqBody_DTO {
   @ApiProperty({ example: 'Mike', description: "User's name" })
-  @IsString({ message: 'Must be a string' })
-  @Length(3, 16, { message: 'length must be from 3 to 16' })
-  name: string | undefined;
+  name: string;
 
   @ApiProperty({ example: 'Ross', description: "User's surname" })
-  @IsString({ message: 'Must be a string' })
-  @Length(3, 16, { message: 'length must be from 3 to 16' })
-  surname: string | undefined;
+  surname: string;
 
   @ApiProperty({ example: 'user@gmail.com', description: "User's email" })
   @IsString({ message: 'Must be a string' })
   @IsEmail({}, { message: 'Email is incorrect' })
-  email: string | undefined;
+  email: string;
 
   @ApiProperty({ example: 29, description: "User's surname" })
   @IsNumber({ maxDecimalPlaces: 0 })

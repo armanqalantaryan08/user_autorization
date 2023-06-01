@@ -6,6 +6,12 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersEntity } from './users/entities/user.entity';
 import { JWTGlobalModule } from './jwt.module';
+import { AuthController } from './auth/auth.controller';
+import { AuthService } from './auth/auth.service';
+import { AuthModule } from './auth/auth.module';
+import { RequestsEntity } from './users/entities/requests.entity';
+import { RequestsModule } from './requests/requests.module';
+import { FriendsEntity } from './users/entities/friends.entity';
 
 @Module({
   imports: [
@@ -17,14 +23,16 @@ import { JWTGlobalModule } from './jwt.module';
       username: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       database: process.env.POSTGRES_DB,
-      entities: [UsersEntity],
+      entities: [UsersEntity, RequestsEntity, FriendsEntity],
       synchronize: true,
       autoLoadEntities: true,
     }),
     UsersModule,
     JWTGlobalModule,
+    AuthModule,
+    RequestsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, AuthController],
+  providers: [AppService, AuthService],
 })
 export class AppModule {}
