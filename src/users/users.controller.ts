@@ -45,7 +45,7 @@ export class UsersController {
 
   //get user by it`s id--------------------------------
   @ApiOperation({ summary: 'Get User By Id' })
-  @Get('get-user/:id')
+  @Get(':id')
   @UseGuards(JwtAuthGuard)
   getById(@Param('id') id: string) {
     return this.usersService.getById(id);

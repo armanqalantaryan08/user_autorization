@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersEntity } from './entities/user.entity';
-import { RequestsEntity } from './entities/requests.entity';
-import { FriendsEntity } from './entities/friends.entity';
+import { UsersEntity } from '../entities/user.entity';
+import { RequestsEntity } from '../entities/requests.entity';
+import { FriendsEntity } from '../entities/friends.entity';
 
 @Module({
   imports: [

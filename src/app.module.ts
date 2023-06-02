@@ -1,17 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersEntity } from './users/entities/user.entity';
+import { UsersEntity } from './entities/user.entity';
 import { JWTGlobalModule } from './jwt.module';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
-import { RequestsEntity } from './users/entities/requests.entity';
+import { RequestsEntity } from './entities/requests.entity';
 import { RequestsModule } from './requests/requests.module';
-import { FriendsEntity } from './users/entities/friends.entity';
+import { FriendsEntity } from './entities/friends.entity';
 
 @Module({
   imports: [
@@ -32,7 +30,7 @@ import { FriendsEntity } from './users/entities/friends.entity';
     AuthModule,
     RequestsModule,
   ],
-  controllers: [AppController, AuthController],
-  providers: [AppService, AuthService],
+  controllers: [AuthController],
+  providers: [AuthService],
 })
 export class AppModule {}

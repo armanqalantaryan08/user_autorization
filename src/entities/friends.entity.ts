@@ -5,10 +5,10 @@ import { UsersEntity } from './user.entity';
 @Entity('friends')
 export class FriendsEntity extends RawBaseEntity {
   @ManyToOne(() => UsersEntity, (user) => user.friends)
-  @JoinColumn({ name: 'user_uuid' })
-  user: UsersEntity;
+  @JoinColumn({ name: 'user1_uuid' })
+  user1: UsersEntity;
 
   @ManyToOne(() => UsersEntity)
-  @JoinColumn({ name: 'friend_uuid' })
-  friend: UsersEntity;
+  @JoinColumn({ name: 'user2_uuid' })
+  user2: UsersEntity;
 }

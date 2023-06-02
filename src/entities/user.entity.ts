@@ -26,6 +26,6 @@ export class UsersEntity extends RawBaseEntity {
   @OneToMany(() => RequestsEntity, (request) => request.requestee)
   incomingRequests: Array<RequestsEntity>;
 
-  @OneToMany(() => FriendsEntity, (friend) => friend.user)
+  @OneToMany(() => FriendsEntity, (friend) => friend.user1)
   friends: Array<FriendsEntity>;
 }

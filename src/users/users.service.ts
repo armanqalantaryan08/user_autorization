@@ -1,15 +1,17 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { User_create_ReqBody_DTO } from './dto/User.create.ReqBody.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UsersEntity } from './entities/user.entity';
-import { FindManyOptions, IsNull, Repository } from 'typeorm';
+import { UsersEntity } from '../entities/user.entity';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { User_DTO } from './dto/User.dto';
 import { User_Update_ReqBody_DTO } from './dto/User.update.ReqBody.dto';
-import { RequestsEntity } from './entities/requests.entity';
-import { FriendsEntity } from './entities/friends.entity';
+import { RequestsEntity } from '../entities/requests.entity';
+import { FriendsEntity } from '../entities/friends.entity';
 import { User_getMany_ReqQuery_DTO } from './dto/User.getMany.ReqQuery.dto';
+import { IsNull, Repository } from 'typeorm';
+import { User_GetMany_ResBody_DTO } from './dto/User.getMany.ResBody.dto';
+import { User_GetFriends_ResBody_DTO } from './dto/User.getFriends.dto';
 
 @Injectable()
 export class UsersService {
@@ -22,7 +24,7 @@ export class UsersService {
     private friendRepository: Repository<FriendsEntity>,
   ) {}
 
-  private _validateEmail(email: string) {
+  private _validateEmail(email: string): boolean {
     const regex =
       /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
     return regex.test(email);
@@ -63,7 +65,9 @@ export class UsersService {
     return (await this._transformUserToDto([user]))[0];
   }
 
-  async getAll(args: User_getMany_ReqQuery_DTO) {
+  async getAll(
+    args: User_getMany_ReqQuery_DTO,
+  ): Promise<User_GetMany_ResBody_DTO> {
     const query = this.userRepository.createQueryBuilder('users').where({
       deleted_at: IsNull(),
     });
@@ -85,10 +89,11 @@ export class UsersService {
     }
 
     const users = await query.getMany();
-    return users;
+
+    return { users: await this._transformUserToDto(users) };
   }
 
-  async getByUuid(uuid: string) {
+  async getByUuid(uuid: string): Promise<UsersEntity> {
     const user = await this.userRepository.findOne({
       where: {
         uuid,
@@ -102,7 +107,7 @@ export class UsersService {
     return (await this._transformUserToDto([await this.getByUuid(id)]))[0];
   }
 
-  async getByEmail(email: string) {
+  async getByEmail(email: string): Promise<UsersEntity> {
     return await this.userRepository.findOne({
       where: {
         email,
@@ -111,51 +116,20 @@ export class UsersService {
     });
   }
 
-  async getFriends(uuid: string) {
+  async getFriends(uuid: string): Promise<User_GetFriends_ResBody_DTO> {
     console.log('uuid:', uuid);
-    const friends = await this.userRepository
-      .createQueryBuilder('user')
-      .select()
-      .leftJoin('user.friends', 'fr')
-      // .where('fr.user_uuid = user.uuid')
-      // .orWhere('fr.friend_uuid = user.uuid')
-      .orWhere('fr.friend_uuid = :uuid', {
-        uuid: '3ef65571-236c-43b0-8e75-c1452c7e272c',
-      })
 
-      // .orWhere('fr.user_uuid = user.uuid')
-      // .andWhere('fr.friend_uuid = :uuid', { uuid })
-      // .leftJoin('user.friends', 'fra')
-      // .where('fra.friend_uuid = :num', {
-      //   num: '9e579f72-c1b1-4822-880f-c3f4cf06a8e0',
-      // })
-      // .andWhere('fra.user_uuid = :uuid', { uuid })
+    const query = this.userRepository.createQueryBuilder('user').innerJoin(
+      FriendsEntity,
+      'fr',
+      `
+      ((user.uuid = fr.user_uuid AND fr.friend_uuid = :uuid) OR (user.uuid = fr.friend_uuid AND fr.user_uuid = :uuid))`,
+      { uuid },
+    );
 
-      // .leftJoin('user.friends', 'fr1')
-      // .where('fr1.friend_uuid = user.uuid')
-      // .orWhere('fr.friend_uuid = :uuid', { uuid })
+    const friends = await query.getRawMany();
 
-      .getMany();
-    return friends;
-
-    // const friends1 = await this.friendRepository.find({
-    //   where: {
-    //     user: {
-    //       uuid,
-    //     },
-    //   },
-    //   relations: ['friend'],
-    // });
-    // const friends2 = await this.friendRepository.find({
-    //   where: {
-    //     friend: {
-    //       uuid,
-    //     },
-    //   },
-    //   relations: ['user'],
-    // });
-    // console.log('fr', friends1);
-    // console.log('fr2', friends2);
+    return { friends: await this._transformUserToDto(friends) };
   }
 
   async update(id: string, args: User_Update_ReqBody_DTO): Promise<User_DTO> {
