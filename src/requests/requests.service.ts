@@ -7,6 +7,7 @@ import { UsersService } from '../users/users.service';
 import { Request_ReqBody_DTO } from './dto/Request.ReqBody.dto';
 import { FriendsEntity } from '../entities/friends.entity';
 import { UsersEntity } from '../entities/user.entity';
+import { Request_ResBody_DTO } from './dto/Request.ResBody.dto';
 
 @Injectable()
 export class RequestsService {
@@ -20,17 +21,23 @@ export class RequestsService {
     private friendsRepository: Repository<FriendsEntity>,
   ) {}
 
-  async getRequests(uuid: string): Promise<Array<RequestsEntity>> {
-    const reqs = await this.userRepository.find({
+  async getRequests(uuid: string): Promise<Array<Request_ResBody_DTO>> {
+    const reqs = await this.requestRepository.find({
       where: {
-        uuid: uuid,
+        requestee: {
+          uuid,
+        },
         deleted_at: IsNull(),
       },
-      relations: ['incomingRequests'],
+      relations: ['requester'],
     });
 
-    console.log(reqs);
-    return reqs[0].incomingRequests;
+    return reqs.map((req) => {
+      return {
+        request_uuid: req.uuid,
+        requester_uuid: req.requester.uuid,
+      };
+    });
   }
 
   async sendFriendRequest(

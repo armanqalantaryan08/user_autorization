@@ -115,19 +115,18 @@ export class UsersService {
       },
     });
   }
-
-  async getFriends(uuid: string): Promise<User_GetFriends_ResBody_DTO> {
-    console.log('uuid:', uuid);
-
-    const query = this.userRepository.createQueryBuilder('user').innerJoin(
-      FriendsEntity,
-      'fr',
-      `
-      ((user.uuid = fr.user_uuid AND fr.friend_uuid = :uuid) OR (user.uuid = fr.friend_uuid AND fr.user_uuid = :uuid))`,
-      { uuid },
-    );
-
-    const friends = await query.getRawMany();
+  // : Promise<User_GetFriends_ResBody_DTO>
+  async getFriends(uuid: string) {
+    const friends = await this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin(
+        FriendsEntity,
+        'fr',
+        `
+      ((user.uuid = fr.user1_uuid AND fr.user2_uuid = :uuid) OR (user.uuid = fr.user2_uuid AND fr.user1_uuid = :uuid))`,
+        { uuid },
+      )
+      .getRawMany();
 
     return { friends: await this._transformUserToDto(friends) };
   }

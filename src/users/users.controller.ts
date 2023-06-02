@@ -43,19 +43,19 @@ export class UsersController {
     return this.usersService.getAll(body);
   }
 
+  @ApiOperation({ summary: 'Get User By Id' })
+  @Get('friends')
+  @UseGuards(JwtAuthGuard)
+  getFriends(@Req() req) {
+    return this.usersService.getFriends(req.user.uuid);
+  }
+
   //get user by it`s id--------------------------------
   @ApiOperation({ summary: 'Get User By Id' })
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   getById(@Param('id') id: string) {
     return this.usersService.getById(id);
-  }
-
-  @ApiOperation({ summary: 'Get User By Id' })
-  @Get('friends')
-  @UseGuards(JwtAuthGuard)
-  getFriends(@Req() req) {
-    return this.usersService.getFriends(req.user.uuid);
   }
 
   //update user`s data---------------------------------

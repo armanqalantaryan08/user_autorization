@@ -22,7 +22,7 @@ export class RequestsController {
   //send another user friend request-----------------------
   @ApiOperation({ summary: 'Send friend Request' })
   @UseGuards(JwtAuthGuard)
-  @Post('request')
+  @Post('send-request')
   sendFriendRequest(@Body() body: Request_ReqParam_DTO, @Req() req) {
     return this.requestsService.sendFriendRequest(req.user.uuid, body.uuid);
   }
